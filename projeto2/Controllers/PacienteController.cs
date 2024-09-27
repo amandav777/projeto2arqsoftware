@@ -1,7 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System.Threading.Tasks;
-using Projeto2.Models;
-using Projeto2.Services;
 using projeto2.Controllers;
 
 namespace Projeto2.Controllers
