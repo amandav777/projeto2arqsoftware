@@ -1,8 +1,6 @@
-﻿using System;
-
-public class AgendamentoDTO
+﻿public class AgendamentoDTO
 {
-    public string PacienteId { get; set; }
-    public string MedicoId { get; set; }
+    public required string PacienteId { get; set; }
+    public required string MedicoId { get; set; }
     public DateTime Data { get; set; }
 }
