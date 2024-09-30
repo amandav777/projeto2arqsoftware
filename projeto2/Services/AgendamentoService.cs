@@ -1,13 +1,11 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-using projeto2.DTOs;
-using projeto2.Models;
-using projeto2.Repositories;
-using projeto2.Repositories.Data;
-using projeto2.Services;
+using projeto2arqsoftware.DTOs;
+using projeto2arqsoftware.Models;
+using projeto2arqsoftware.Repositories;
+using projeto2arqsoftware.Services;
 
-namespace AgendamentoService
+namespace projeto2arqsoftware.Services
 {
     public class AgendamentoService
     {
@@ -17,7 +15,6 @@ namespace AgendamentoService
         private readonly AgendamentoRepository _agendamentoRepository;
         private readonly DisponibilidadeService _disponibilidadeService;
         private readonly EmailService _emailService;
-
 
         public AgendamentoService(
            AppDbContext context,
@@ -38,36 +35,41 @@ namespace AgendamentoService
 
         public async Task<Agendamento> CriarAgendamento(AgendamentoDTO agendamentoDTO)
         {
-            
-            Paciente paciente = await _pacienteService.GetPacienteOrThrowError(agendamentoDTO.PacienteId);
+          
+            if (agendamentoDTO.DataConsulta < DateTime.Now)
+            {
+                throw new Exception("A data da consulta não pode ser no passado.");
+            }
 
-            
+            DateTime inicioConsulta = agendamentoDTO.DataConsulta.Date; 
+            DateTime fimConsulta = inicioConsulta.AddDays(1).AddTicks(-1);
+
+            Paciente paciente = await _pacienteService.GetPacienteOrThrowError(agendamentoDTO.PacienteId);
             Medico medico = await _medicoService.GetMedicoOrThrowError(agendamentoDTO.MedicoId);
 
-            
-            bool medicoDisponivel = await _disponibilidadeService.VerificaDisponibilidade(medico.Id, agendamentoDTO.DataConsulta);
+            bool medicoDisponivel = await _disponibilidadeService.VerificaDisponibilidade(medico.Id, inicioConsulta);
             if (!medicoDisponivel)
             {
                 throw new Exception("Médico indisponível para a data especificada.");
             }
 
-            
             Agendamento agendamento = new Agendamento
             {
                 Paciente = paciente,
                 Medico = medico,
-                Data = agendamentoDTO.DataConsulta,
+                Data = inicioConsulta,
                 Status = true 
             };
 
             agendamento = await _agendamentoRepository.SaveAgendamento(agendamento);
 
-          
-            await _emailService.EnviarNotificacaoAgendamento(paciente.Email, agendamento);
+            
+            string subject = "Confirmação de Agendamento";
+            string body = $"Olá {paciente.Nome}, seu agendamento foi confirmado para o dia {inicioConsulta:dd/MM/yyyy}.";
+
+            _emailService.SendEmail(paciente.Email, subject, body);
 
             return agendamento;
         }
-    )
+    }
 }
-
-
